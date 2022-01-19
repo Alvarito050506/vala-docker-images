@@ -10,6 +10,9 @@ env:
 
 jobs:
   build-push:
+    strategy:
+      matrix:
+        distro: [alpine, debian, elementary, fedora, ubuntu]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -29,4 +32,4 @@ jobs:
         run: |
          echo "REPO=$(echo ${REGISTRY}/${OWNER}/vala | tr '[:upper:]' '[:lower:]')" >> "${GITHUB_ENV}"
       - name: Build and push
-        run: make BUILDFLAGS=--push
+        run: make DISTROS=${{ matrix.distro }} BUILDFLAGS=--push
