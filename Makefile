@@ -24,12 +24,12 @@ buildx-%: DISTRO=$(@:buildx-%=%)
 build/Dockerfile.%: DISTRO=$(@:build/Dockerfile.%=%)
 
 buildx-%: build/Dockerfile.%
-	cd cfg && DISTRO=$(DISTRO) . $(DISTRO).cfg && cd .. && \
+	cd cfg && DISTRO=$(DISTRO) . ./$(DISTRO).cfg && cd .. && \
 	docker buildx build -f $< --platform $${ARCHS} \
-		--tag $(NAMESPACE):latest-$(DISTRO) \
+		--tag $(REPO):latest-$(DISTRO) \
 		--build-arg VALA_NAME=$(VALA_NAME) \
 		--build-arg DISTRO=$(DISTRO) \
-		--build-arg TAG=$${TAG} build/
+		--build-arg TAG=$${TAG} build/ $(BUILDFLAGS)
 
 build/Dockerfile.%: cfg/%.cfg
 	cd cfg && DISTRO=$(DISTRO) . ../$< && cd .. && \

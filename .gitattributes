@@ -1,1 +1,2 @@
 Dockerfile* linguist-language=Dockerfile
+*.cfg linguist-language=Shell
