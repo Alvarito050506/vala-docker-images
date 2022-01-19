@@ -1,0 +1,27 @@
+ARG ARCH=
+ARG DISTRO=
+ARG TAG=
+FROM ${ARCH}${DISTRO}:${TAG} as base
+ARG VALA_NAME=
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update -y && \
+	apt-get install -y libc6-dev libglib2.0-dev gcc pkg-config && \
+	rm -rf /var/lib/apt/lists/*
+
+FROM base AS build
+
+RUN apt-get update -y && \
+	apt-get install -y valac flex bison make autoconf autoconf-archive automake libtool && \
+	rm -rf /var/lib/apt/lists/*
+RUN mkdir -p /opt/build /opt/src
+COPY ${VALA_NAME} /opt/src
+WORKDIR /opt/src
+RUN ./configure --prefix=/usr --disable-valadoc CFLAGS="-O2" && \
+    make -j$(getconf _NPROCESSORS_ONLN) && \
+    make DESTDIR=/opt/build install-strip
+
+FROM base AS runtime
+
+COPY --from=build /opt/build /

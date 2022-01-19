@@ -1,0 +1,55 @@
+--- codegen/valaccodemethodcallmodule.vala
++++ codegen/valaccodemethodcallmodule.vala
+@@ -1083,11 +1083,11 @@ public class Vala.CCodeMethodCallModule : CCodeAssignmentModule {
+ 		ccode.add_declaration ("va_list", new CCodeVariableDeclarator ("ap"));
+ 		ccode.add_declaration ("char*", new CCodeVariableDeclarator ("result"));
+ 
+-		var va_start = new CCodeFunctionCall (new CCodeIdentifier ("va_start"));
+-		va_start.add_argument (new CCodeIdentifier ("ap"));
+-		va_start.add_argument (new CCodeIdentifier ("format"));
++		var vastart = new CCodeFunctionCall (new CCodeIdentifier ("va_start"));
++		vastart.add_argument (new CCodeIdentifier ("ap"));
++		vastart.add_argument (new CCodeIdentifier ("format"));
+ 
+-		ccode.add_expression (va_start);
++		ccode.add_expression (vastart);
+ 
+ 		if (context.profile == Profile.POSIX) {
+ 			cfile.add_include ("stdio.h");
+@@ -1111,11 +1111,11 @@ public class Vala.CCodeMethodCallModule : CCodeAssignmentModule {
+ 
+ 		ccode.add_assignment (new CCodeIdentifier ("result"), malloc);
+ 
+-		va_start = new CCodeFunctionCall (new CCodeIdentifier ("va_start"));
+-		va_start.add_argument (new CCodeIdentifier ("ap"));
+-		va_start.add_argument (new CCodeIdentifier ("format"));
++		vastart = new CCodeFunctionCall (new CCodeIdentifier ("va_start"));
++		vastart.add_argument (new CCodeIdentifier ("ap"));
++		vastart.add_argument (new CCodeIdentifier ("format"));
+ 
+-		ccode.add_expression (va_start);
++		ccode.add_expression (vastart);
+ 
+ 		vsnprintf = new CCodeFunctionCall (new CCodeIdentifier ("vsnprintf"));
+ 		vsnprintf.add_argument (new CCodeIdentifier ("result"));
+diff --git a/codegen/valaccodemethodmodule.vala b/codegen/valaccodemethodmodule.vala
+index 9b9fd36906b5da15ae6f22d74f9983e800002858..77ff73c3120bcafd5b01daf4273349bbfe40c0bd 100644
+--- codegen/valaccodemethodmodule.vala
++++ codegen/valaccodemethodmodule.vala
+@@ -1399,12 +1399,12 @@ public abstract class Vala.CCodeMethodModule : CCodeStructModule {
+ 				vcall.add_argument (carg);
+ 			}
+ 
+-			var va_start = new CCodeFunctionCall (new CCodeIdentifier ("va_start"));
+-			va_start.add_argument (new CCodeIdentifier ("_vala_va_list_obj"));
+-			va_start.add_argument (carg);
++			var vastart = new CCodeFunctionCall (new CCodeIdentifier ("va_start"));
++			vastart.add_argument (new CCodeIdentifier ("_vala_va_list_obj"));
++			vastart.add_argument (carg);
+ 
+ 			ccode.add_declaration ("va_list", new CCodeVariableDeclarator ("_vala_va_list_obj"));
+-			ccode.add_expression (va_start);
++			ccode.add_expression (vastart);
+ 
+ 			vcall.add_argument (new CCodeIdentifier("_vala_va_list_obj"));
+ 		}
