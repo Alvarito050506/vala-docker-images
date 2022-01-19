@@ -2,25 +2,38 @@ include vala-release.mk
 -include config.mk
 include config.def.mk
 
-VALA_MINOR=$(shell printf $(VALA_VERSION) | sed -E 's/^([0-9]+)\.([0-9]+)\.([0-9]+)$/\1.\2/')
+export ARCHS_DEF
+
+VALA_MINOR=$(shell printf $(VALA_VERSION) | sed -E 's/^([0-9]+)\.([0-9]+)\.([0-9]+)$$/\1.\2/')
 VALA_NAME=vala-$(VALA_VERSION)
 
-all: $(VALA_NAME) $(patsubst %,buildx-%,$(DISTROS))
+all: build build/$(VALA_NAME) $(DISTROS:%=buildx-%)
 
-$(VALA_NAME): $(VALA_NAME).tar.xz
-	tar xf $^
-	patch -s -p0 -d $(VALA_NAME) < fixes.diff
+build:
+	mkdir -p $@
 
-$(VALA_NAME).tar.xz:
-	curl -fsSLO https://download.gnome.org/sources/vala/$(VALA_MINOR)/$@
+build/$(VALA_NAME): build/$(VALA_NAME).tar.xz
+	tar xf $^ -C build
+	patch -s -p0 -d $@ < src/fixes.diff
+	touch $@
 
-buildx-%: DISTRO=$(patsubst buildx-%,%,$@)
-buildx-%: TAG=$(TAG_$(DISTRO))
-buildx-%: NS_$(DISTRO)?=$(DISTRO)
+build/$(VALA_NAME).tar.xz:
+	curl -fsSL https://download.gnome.org/sources/vala/$(VALA_MINOR)/$(VALA_NAME).tar.xz -o $@
 
-buildx-%: Dockerfile.%
-	docker buildx build -f $< --platform $(PLATFORMS) \
+buildx-%: DISTRO=$(@:buildx-%=%)
+build/Dockerfile.%: DISTRO=$(@:build/Dockerfile.%=%)
+
+buildx-%: build/Dockerfile.%
+	cd cfg && DISTRO=$(DISTRO) . $(DISTRO).cfg && cd .. && \
+	docker buildx build -f $< --platform $${ARCHS} \
 		--tag $(NAMESPACE):latest-$(DISTRO) \
 		--build-arg VALA_NAME=$(VALA_NAME) \
 		--build-arg DISTRO=$(DISTRO) \
-		--build-arg TAG=$(TAG) .
+		--build-arg TAG=$${TAG} build/
+
+build/Dockerfile.%: cfg/%.cfg
+	cd cfg && DISTRO=$(DISTRO) . ../$< && cd .. && \
+	awk -v FROM="$${FROM}" -v BASE="$${BASE}" -v BUILD="$${BUILD}" -f src/gen.awk src/Dockerfile.tmpl > $@
+
+clean:
+	rm -rf build

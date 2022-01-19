@@ -1,14 +1,17 @@
 ARG ARCH=
 ARG DISTRO=
 ARG TAG=
-FROM ${ARCH}${DISTRO}:${TAG} as base
+
+{FROM}
+
 ARG VALA_NAME=
 
-RUN apk add --no-cache musl-dev glib-dev gcc pkgconfig
+{BASE}
 
 FROM base AS build
 
-RUN apk add --no-cache vala flex bison make autoconf autoconf-archive automake libtool
+{BUILD}
+
 RUN mkdir -p /opt/build /opt/src
 COPY ${VALA_NAME} /opt/src
 WORKDIR /opt/src

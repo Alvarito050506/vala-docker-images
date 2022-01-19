@@ -1,6 +1,3 @@
-PLATFORMS?=linux/arm64/v8,linux/arm64/v7,linux/amd64
-DISTROS?=alpine debian ubuntu
+ARCHS_DEF?=linux/arm/v7,linux/arm64/v8,linux/amd64
+DISTROS?=alpine debian elementary fedora ubuntu
 NAMESPACE?=valalang/vala
-TAG_alpine?=latest
-TAG_debian?=stable-slim
-TAG_ubuntu?=latest
