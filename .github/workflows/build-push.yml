@@ -3,16 +3,36 @@ name: Build and push all
 on:
   push:
     branches: [ master ]
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
   OWNER: ${{ github.repository_owner }}
 
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.check-files.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+      - name: Check changed files
+        id: check-files
+        run: |
+          FILES="$(git diff --name-only HEAD^ HEAD)"
+          MATRIX="$(echo "$FILES" | tr ' ' '\n' | grep 'cfg/.*\.cfg' | sed -E 's/cfg\/(.*)\.cfg/\1/g')"
+          if [[ "$(echo "$FILES" | grep -E '^(.*\.mk|Makefile|src/.*)$')" ]]; then
+            MATRIX="alpine debian elementary fedora ubuntu"
+          fi
+          JSON="{ \"distro\": [ $(echo $MATRIX | sed -E 's/([^ ]*) /"\1", /g; s/([^ ]*)$/"\1"/') ] }"
+          echo "::set-output name=matrix::$(echo "$JSON")"
+
   build-push:
+    needs: check
     strategy:
-      matrix:
-        distro: [alpine, debian, elementary, fedora, ubuntu]
+      matrix: ${{ fromJson(needs.check.outputs.matrix) }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -30,6 +50,6 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Set REPO env variable
         run: |
-         echo "REPO=$(echo ${REGISTRY}/${OWNER}/vala | tr '[:upper:]' '[:lower:]')" >> "${GITHUB_ENV}"
+          echo "REPO=$(echo ${REGISTRY}/${OWNER}/vala | tr '[:upper:]' '[:lower:]')" >> "${GITHUB_ENV}"
       - name: Build and push
         run: make DISTROS=${{ matrix.distro }} BUILDFLAGS=--push
