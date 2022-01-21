@@ -8,12 +8,14 @@ on:
 env:
   REGISTRY: ghcr.io
   OWNER: ${{ github.repository_owner }}
+  EV_NAME: ${{ github.event_name }}
 
 jobs:
   check:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.check-files.outputs.matrix }}
+      build: ${{ steps.check-files.outputs.build }}
     steps:
       - uses: actions/checkout@v2
         with:
@@ -22,15 +24,25 @@ jobs:
         id: check-files
         run: |
           FILES="$(git diff --name-only HEAD^ HEAD)"
-          MATRIX="$(echo "$FILES" | tr ' ' '\n' | grep 'cfg/.*\.cfg' | sed -E 's/cfg\/(.*)\.cfg/\1/g')"
-          if [[ "$(echo "$FILES" | grep -E '^(.*\.mk|Makefile|src/.*)$')" ]]; then
+          if [[ "${EV_NAME}" == "workflow_dispatch" || "$(echo "${FILES}" | grep -E '^(.*\.mk|Makefile|src/.*)$')" ]]; then
             MATRIX="alpine debian elementary fedora ubuntu"
+          else
+            MATRIX="$(echo "${FILES}" | grep 'cfg/.*\.cfg' | sed -E 's/cfg\/(.*)\.cfg/\1/g')"
+            MATRIX="${MATRIX}$(echo "${MATRIX}" | tr ' ' '\n' | while read BASE; do
+              printf "$(grep -R "^like ${BASE}$" ./cfg/ | sed -E 's/.\/cfg\/(.*)\.cfg:.*/\1/g' | while read DISTRO; do
+              if [[ "${MATRIX}" != *"${DISTRO}"* ]]; then
+                printf " ${DISTRO}"
+              fi
+              done)"
+            done)"
           fi
-          JSON="{ \"distro\": [ $(echo $MATRIX | sed -E 's/([^ ]*) /"\1", /g; s/([^ ]*)$/"\1"/') ] }"
-          echo "::set-output name=matrix::$(echo "$JSON")"
+          JSON="{ \"distro\": [ $(echo "${MATRIX}" | sed -E 's/([^ ]*) /"\1", /g; s/([^ ]*)$/"\1"/') ] }"
+          echo "::set-output name=matrix::$(echo "${JSON}")"
+          echo "::set-output name=build::$([[ "${MATRIX}" ]] && printf "true" || printf "false")"
 
   build-push:
     needs: check
+    if: needs.check.outputs.build == 'true'
     strategy:
       matrix: ${{ fromJson(needs.check.outputs.matrix) }}
     runs-on: ubuntu-latest
